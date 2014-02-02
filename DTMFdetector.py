@@ -190,11 +190,13 @@ class DTMFdetector(object):
         #stores the character found, and the time in the file in seconds in which the file was found
         char = row_col_ascii_codes[row][col-4]
         time = float(self.sample_index) / float(self.SAMPLING_RATE)
-        #self.characters.append( (char, time) )
-        if len(self.characters)==0:
-          self.characters.append(char)
-        elif self.characters[-1] != char:
-          self.characters += char
+        self.characters.append( (char, time) )
+
+        # create charStr, skipping duplicates
+        if len(self.charStr)==0:
+          self.charStr += char
+        elif self.charStr[-1] != char:
+          self.charStr += char
 
   ###########################################
   ## This takes the number of characters found and such and 
@@ -338,7 +340,7 @@ class DTMFdetector(object):
     for samp in block:
       samp16 = int(2**16*(samp)/2)
       self.goertzel(samp16)
-    sav = self.characters
-    self.characters = []
+    sav = self.charStr
+    #self.charStr = ""
     return sav
 

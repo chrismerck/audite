@@ -6,13 +6,14 @@ from scipy import fftpack
 from collections import defaultdict
 import random
 import json
+import string
 
 from constants import *
 from beep import beep_win
 from DTMFdetector import DTMFdetector
 
 TIMEOUT = 5
-T_BLOCK = 1 
+T_BLOCK = 0.5
 
 def read_frame(n=None,src=sys.stdin):
   if not n:
@@ -40,21 +41,6 @@ def split_frame(frame, nsamp, overlap):
     yield frame[head:head+nsamp]
     i += 1
 
-def make_filter(center_freq=1000,bandwidth=None):
-  if bandwidth==None:
-    bandwidth=center_freq*0.2
-  def filter_func(freq):
-    ''' triangular filter '''
-    if freq < center_freq-bandwidth:
-      return 0
-    elif freq < center_freq:
-      return (freq-(center_freq-bandwidth))/bandwidth
-    elif freq < center_freq+bandwidth:
-      return ((center_freq+bandwidth)-freq)/bandwidth
-    else:
-      return 0
-  return filter_func
-
 def get_spectrum_x_axis(frame_len, rate):
   return [ 0.5 * i * rate / float(frame_len) for i in range(frame_len)]
 
@@ -66,18 +52,16 @@ def mk_env_filt(n=3):
 
 if __name__=="__main__":
 
-  filt = None
-  es = []
-  i_prev = 0
-
-  # filter for beep envelope
-  env_filt = mk_env_filt()
+  if len(sys.argv)==1:
+    target_code = None
+  else:
+    target_code = sys.argv[1]
 
   dtmf = DTMFdetector()
 
   t_total = 0
   while t_total < TIMEOUT:
-    samps=T_BLOCK*RATE
+    samps=int(T_BLOCK*RATE)
     block = read_frame(samps)
     t_total += T_BLOCK
 
@@ -85,38 +69,22 @@ if __name__=="__main__":
     # use no overlap so we can see gaps in tone also
     for frame in split_frame(block, int(T_FRAME*RATE), 0): 
       w = window(frame)
-      p = periodogram(w)
+      #p = periodogram(w)
 
-      print dtmf.in_block(frame)
+      recog_code = dtmf.in_block(frame)
+      if target_code:
+        if string.find(recog_code,target_code)>=0:
+          print "Got target code!"
+          sys.exit(0)
 
-      # create filter on demand
-      if filt==None:
-        filt_func = make_filter()
-        X = get_spectrum_x_axis(len(p), RATE)
-        filt = [ filt_func(x) for x in X ] 
-
-      #print periodogram for debug
-      '''for i in range(len(p)):
-        print X[i],",",p[i]
-      exit()'''
-
-      # compute energy 
-      e = np.log(np.sum(np.multiply(filt,p)))
-      es.append(e)
-
-    # find beep pattern in energy plot
-    i_next = len(es)-len(env_filt)
-    assert(i_next>i_prev)
-    for i in range(i_prev,i_next):
-      Q=pow(np.sum(env_filt*es[i:i+len(env_filt)]),2)
-      Q_THRESH = 500
-      #print es[i+len(env_filt)-1], ",", Q
-      #if Q>Q_THRESH:
-      #  print "Heard the beeps!"
-      #  sys.exit(0)
-    i_prev=i_next
-
-  print "Timeout."
-  sys.exit(1)
-
+  if target_code:
+    print "Timeout."
+    sys.exit(1)
+  else:
+    if recog_code != '':
+      print recog_code
+      sys.exit(0)
+    else:
+      print "Timout: No DTMF recognized."
+      sys.exit(1)
 

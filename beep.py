@@ -69,7 +69,12 @@ def dtmf(char,t=0.2,vol=0.8):
   return np.multiply(w,frame)
 
 if __name__=="__main__":
-  #write_frame(beep())
-  for c in "973 459 0582":
+  if len(sys.argv)>=2:
+    code = sys.argv[1]
+  else:
+    sys.stderr.write("ERROR: No DTMF string given on command line.\n")
+    sys.exit(1)
+  for c in code:
     write_frame(dtmf(c))
+  sys.exit(0)
 
