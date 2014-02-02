@@ -67,6 +67,9 @@ if __name__=="__main__":
       raise Exception("Error processing timeout env var: '%s'"%
           os.environ['TIMEOUT'])
 
+  if target_code == '-':
+    target_code = None
+
   dtmf = DTMFdetector()
 
   t_total = 0
