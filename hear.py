@@ -2,17 +2,13 @@ import numpy as np
 import os
 import sys
 import struct
-from scipy import fftpack
-from collections import defaultdict
-import random
-import json
 import string
 
 from constants import *
 from beep import beep_win
 from DTMFdetector import DTMFdetector
 
-TIMEOUT = 5
+TIMEOUT = 5 # default
 T_BLOCK = 0.5
 
 def read_frame(n=None,src=sys.stdin):
@@ -57,6 +53,20 @@ if __name__=="__main__":
   else:
     target_code = sys.argv[1]
 
+  if not target_code or 'h' in target_code or '?' in target_code:
+    sys.stderr.write("Usage: hear [ - | <code> ]\n")
+    sys.stderr.write(" - = listen and return recognized code. \n")
+    sys.stderr.write(" <code> = non-repeating DTMF string to listen for \n")
+    sys.exit(1)
+
+  if 'TIMEOUT' in os.environ:
+    try:
+      TIMEOUT = float(os.environ['TIMEOUT'])
+      sys.stderr.write("TIMEOUT=%1.2fs\n"%TIMEOUT)
+    except:
+      raise Exception("Error processing timeout env var: '%s'"%
+          os.environ['TIMEOUT'])
+
   dtmf = DTMFdetector()
 
   t_total = 0
@@ -85,6 +95,6 @@ if __name__=="__main__":
       print recog_code
       sys.exit(0)
     else:
-      print "Timout: No DTMF recognized."
+      print "Timeout."
       sys.exit(1)
 

@@ -72,7 +72,7 @@ if __name__=="__main__":
   if len(sys.argv)>=2:
     code = sys.argv[1]
   else:
-    sys.stderr.write("ERROR: No DTMF string given on command line.\n")
+    sys.stderr.write("Usage: beep <dtmf-string>\n")
     sys.exit(1)
   for c in code:
     write_frame(dtmf(c))
